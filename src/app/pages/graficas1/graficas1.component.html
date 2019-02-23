@@ -1,3 +1,5 @@
-<p>
-  graficas1 works!
-</p>
+<div class="row">
+    <div *ngFor="let key of keys" class="col-md-6">
+        <app-grafico-dona [grafico]="graficos[key]"></app-grafico-dona>
+    </div>
+</div>
