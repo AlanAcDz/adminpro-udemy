@@ -17,6 +17,7 @@ export class MedicosComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    this.medicoServ.cargarToken();
     this.cargarMedicos();
   }
   cargarMedicos() {

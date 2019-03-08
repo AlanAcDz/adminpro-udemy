@@ -15,7 +15,8 @@ export class HospitalService {
   constructor(
     public http: HttpClient,
     public usuarioServ: UsuarioService
-  ) {
+  ) {}
+  cargarToken() {
     this.token = this.usuarioServ.token;
   }
   cargarHospitales(desde: number = 0) {

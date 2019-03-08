@@ -15,8 +15,9 @@ export class MedicoService {
   constructor(
     public http: HttpClient,
     public usuarioServ: UsuarioService
-  ) {
-    this.token = usuarioServ.token;
+  ) {}
+  cargarToken() {
+    this.token = this.usuarioServ.token;
   }
   cargarMedicos(desde: number = 0) {
     const url = `${ URL_SERVICIOS }/medico?desde=${ desde }`;

@@ -2,10 +2,11 @@ import { Injectable } from '@angular/core';
 import { Usuario } from '../../models/usuario.model';
 import { HttpClient } from '@angular/common/http';
 import { URL_SERVICIOS } from '../../config/config';
-import { map } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
 import swal from 'sweetalert2';
 import { Router } from '@angular/router';
 import { SubirArchivoService } from '../subir-archivo/subir-archivo.service';
+import { throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -13,6 +14,7 @@ import { SubirArchivoService } from '../subir-archivo/subir-archivo.service';
 export class UsuarioService {
   usuario: Usuario;
   token: string;
+  menu: any[] = [];
   constructor(
     public http: HttpClient,
     public router: Router,
@@ -20,33 +22,39 @@ export class UsuarioService {
   ) {
     this.cargarStorage();
   }
-  guardarStorarge(id: string, token: string, usuario: Usuario) {
+  guardarStorarge(id: string, token: string, usuario: Usuario, menu: any) {
     localStorage.setItem('id', id);
     localStorage.setItem('token', token);
     localStorage.setItem('usuario', JSON.stringify(usuario));
+    localStorage.setItem('menu', JSON.stringify(menu));
     this.usuario = usuario;
     this.token = token;
+    this.menu = menu;
   }
   cargarStorage() {
     if (localStorage.getItem('token')) {
       this.token = localStorage.getItem('token');
       this.usuario = JSON.parse(localStorage.getItem('usuario'));
+      this.menu = JSON.parse(localStorage.getItem('menu'));
     } else {
       this.token = '';
       this.usuario = null;
+      this.menu = [];
     }
   }
   logout() {
     this.token = '';
     this.usuario = null;
+    this.menu = [];
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
+    localStorage.removeItem('menu');
     this.router.navigate(['/login']);
   }
   signinGoogle(token: string) {
     const url = URL_SERVICIOS + '/login/google';
     return this.http.post(url, { token }).pipe(map((resp: any) => {
-      this.guardarStorarge(resp.id, resp.token, resp.usuario);
+      this.guardarStorarge(resp.id, resp.token, resp.usuario, resp.menu);
       return true;
     }));
   }
@@ -58,8 +66,11 @@ export class UsuarioService {
     }
     const url = URL_SERVICIOS + '/login';
     return this.http.post(url, usuario).pipe(map((resp: any) => {
-      this.guardarStorarge(resp.id, resp.token, resp.usuario);
+      this.guardarStorarge(resp.id, resp.token, resp.usuario, resp.menu);
       return true;
+    }), catchError(err => {
+      swal.fire('Error en login', err.error.mensaje, 'error');
+      return throwError(err);
     }));
   }
   crearUsuario(usuario: Usuario) {
@@ -67,6 +78,9 @@ export class UsuarioService {
     return this.http.post(url, usuario).pipe(map((resp: any) => {
       swal.fire('Usuario creado', usuario.email, 'success');
       return resp.usuario;
+    }), catchError(err => {
+      swal.fire(err.error.mensaje, err.error.errors.message, 'error');
+      return throwError(err);
     }));
   }
   actualizarUsuario(usuario: Usuario) {
@@ -74,10 +88,13 @@ export class UsuarioService {
     return this.http.put(url, usuario).pipe(map((resp: any) => {
       if (usuario._id === this.usuario._id) {
         const userDB: Usuario = resp.usuario;
-        this.guardarStorarge(userDB._id, this.token, userDB);
+        this.guardarStorarge(userDB._id, this.token, userDB, this.menu);
       }
       swal.fire('Usuario actualizado', usuario.nombre, 'success');
       return true;
+    }), catchError(err => {
+      swal.fire(err.error.mensaje, err.error.errors.message, 'error');
+      return throwError(err);
     }));
   }
   cambiarImg(archivo: File, id: string) {
@@ -85,7 +102,7 @@ export class UsuarioService {
       console.log(resp);
       this.usuario.img = resp.usuario.img;
       swal.fire('Imagen actualizada', this.usuario.nombre, 'success');
-      this.guardarStorarge(id, this.token, this.usuario);
+      this.guardarStorarge(id, this.token, this.usuario, this.menu);
     }).catch(resp => {
       console.log(resp);
     });
